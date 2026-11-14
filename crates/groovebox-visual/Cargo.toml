@@ -1,0 +1,10 @@
+[package]
+name = "groovebox-visual"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Deterministic Fibonacci view-space kernel, FractalSpatialEngine, VideoSynth 1D/2D/3D rasterizer, and PNG encoder for Groovebox"
+
+[dependencies]
+groovebox-math = { path = "../groovebox-math" }
+groovebox-state = { path = "../groovebox-state" }

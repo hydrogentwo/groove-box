@@ -1,0 +1,12 @@
+[package]
+name = "groovebox-game"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Deterministic GameIdentity classifier, software lattice, WorldChunkStreamer, open-world sandbox runtime, and ZIP package exporter for Groovebox"
+
+[dependencies]
+groovebox-math = { path = "../groovebox-math" }
+groovebox-state = { path = "../groovebox-state" }
+groovebox-dsp = { path = "../groovebox-dsp" }
+groovebox-visual = { path = "../groovebox-visual" }

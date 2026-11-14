@@ -1,0 +1,10 @@
+[package]
+name = "groovebox-dsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Deterministic audio synthesizer, Meum oscillator, Fractallizer, EQR tensor, LiveDJEffects, and WAV renderer for Groovebox"
+
+[dependencies]
+groovebox-math = { path = "../groovebox-math" }
+groovebox-state = { path = "../groovebox-state" }
