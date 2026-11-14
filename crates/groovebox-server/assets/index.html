@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Groovebox — Rust Deterministic Audiovisual Studio</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- TOP TRANSPORT & IDENTITY BAR -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <div class="brand-title">GROOVEBOX <span class="badge-rust">RUST v3.9</span></div>
+          <div class="brand-sub">Deterministic Meum / EQR / Operator Theory Audiovisual &amp; Game System</div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button id="btn-play" class="btn btn-primary">▶ Play Loop</button>
+        <button id="btn-stop" class="btn">■ Stop</button>
+        <button id="btn-render" class="btn btn-accent">⟳ Render DSP</button>
+        <button id="btn-undo" class="btn" title="Undo last state change">↶ Undo</button>
+      </div>
+
+      <div class="identity-chips">
+        <div class="chip"><span class="chip-k">CANONICAL FP</span><code id="chip-fp">--------</code></div>
+        <div class="chip"><span class="chip-k">AUDIO SHA256</span><code id="chip-audio">--------</code></div>
+        <div class="chip"><span class="chip-k">MEUM</span><code>1.19758073…</code></div>
+      </div>
+
+      <div class="export-bar">
+        <a id="link-export-wav" class="btn btn-sm" href="./api/audio.wav" download="groovebox.wav">⬇ WAV</a>
+        <button id="btn-export-png" class="btn btn-sm">⬇ PNG</button>
+        <a id="link-export-zip" class="btn btn-sm" href="./api/game/export.zip" download="groovebox_game.zip">⬇ Game ZIP</a>
+        <button id="btn-save-json" class="btn btn-sm">Save JSON</button>
+        <label class="btn btn-sm file-btn">Load JSON<input id="input-load-json" type="file" accept=".json" hidden /></label>
+      </div>
+    </header>
+
+    <!-- GLOBAL COMPOSITION CONTROLS BAR -->
+    <section class="control-strip">
+      <div class="ctrl-group">
+        <label>Seed (number / list / expr)</label>
+        <div class="inline-row">
+          <input id="inp-seed" type="text" value="42" placeholder="blank or 0 = no seed" />
+          <button id="btn-apply-seed" class="btn btn-sm">Apply</button>
+        </div>
+      </div>
+      <div class="ctrl-group ctrl-num">
+        <label>BPM</label>
+        <input id="inp-bpm" type="number" min="20" max="480" step="1" value="120" />
+      </div>
+      <div class="ctrl-group ctrl-num">
+        <label>Base Hz</label>
+        <input id="inp-basehz" type="number" min="20" max="4000" step="1" value="432" />
+      </div>
+      <div class="ctrl-group ctrl-num">
+        <label>Voices (2–64)</label>
+        <input id="inp-voices" type="number" min="2" max="64" step="1" value="8" />
+      </div>
+      <div class="ctrl-group ctrl-num">
+        <label>Steps</label>
+        <select id="sel-steps">
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+      </div>
+      <div class="ctrl-group ctrl-num">
+        <label>Bars</label>
+        <select id="sel-bars">
+          <option value="1" selected>1 Bar</option>
+          <option value="2">2 Bars</option>
+          <option value="4">4 Bars</option>
+        </select>
+      </div>
+      <div class="ctrl-group ctrl-slider">
+        <label>Seed Wt <span id="val-seedwt">0.72</span></label>
+        <input id="rng-seedwt" type="range" min="0" max="1" step="0.01" value="0.72" />
+      </div>
+      <div class="ctrl-group ctrl-slider">
+        <label>Master Vol <span id="val-vol">0.80</span></label>
+        <input id="rng-vol" type="range" min="0" max="1.5" step="0.01" value="0.80" />
+      </div>
+      <div class="ctrl-group">
+        <label>Operator Theory (Book p.49)</label>
+        <button id="btn-ot" class="btn-toggle active">Operator Theory: ON</button>
+      </div>
+    </section>
+
+    <!-- CANONICAL ENGINE TOGGLES & MASTER FX BAR -->
+    <section class="engine-strip">
+      <div class="toggles-row">
+        <span class="strip-label">CANONICAL ENGINES</span>
+        <button class="pill" data-toggle="randomizer">Randomizer</button>
+        <button class="pill" data-toggle="phaselock">Phase-Lock</button>
+        <button class="pill" data-toggle="apply_composition">Euclidean</button>
+        <button class="pill" data-toggle="goava">GOAVA</button>
+        <button class="pill" data-toggle="pkp_boost">PKP / OT Bus</button>
+        <button class="pill" id="pill-unison">Full Unison</button>
+        <button class="pill" id="pill-fullwt">FullWeight Seed</button>
+      </div>
+      <div class="master-fx-row">
+        <div class="mini-slider">
+          <label>Fractallizer <span id="val-frac">33%</span></label>
+          <input id="rng-frac" type="range" min="0" max="1" step="0.01" value="0.33" />
+        </div>
+        <div class="mini-slider">
+          <label>Gamma <span id="val-gamma">1.83</span></label>
+          <input id="rng-gamma" type="range" min="1.05" max="3.5" step="0.01" value="1.83" />
+        </div>
+        <div class="mini-slider">
+          <label>EQR Tensor <span id="val-eqr">25%</span></label>
+          <input id="rng-eqr" type="range" min="0" max="1" step="0.01" value="0.25" />
+        </div>
+        <div class="mini-slider">
+          <label>PKP Decay <span id="val-pkp">35%</span></label>
+          <input id="rng-pkp" type="range" min="0" max="1" step="0.01" value="0.35" />
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN STUDIO NAVIGATION TABS -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="sequencer">1. Sequencer &amp; Synth Rack</button>
+      <button class="tab" data-tab="visualizer">2. VideoSynth 1D/2D/3D</button>
+      <button class="tab" data-tab="global-play">3. Global Play Algorithms</button>
+      <button class="tab" data-tab="spatial">4. Fractal Spatial Universe</button>
+      <button class="tab" data-tab="game">5. Game Engine &amp; Sandbox</button>
+      <button class="tab" data-tab="audit">6. Auditor &amp; Parity</button>
+    </nav>
+
+    <!-- TAB 1: SEQUENCER & SYNTH RACK -->
+    <main id="tab-sequencer" class="tab-panel active">
+      <div class="seq-layout">
+        <div class="panel seq-panel">
+          <div class="panel-head">
+            <h3>Canonical Multi-Instrument Step Sequencer</h3>
+            <div class="panel-actions">
+              <button id="btn-euclid-all" class="btn btn-sm">Euclidean Auto-Fill</button>
+              <button id="btn-sculpt" class="btn btn-sm">Trigger Sculptor</button>
+              <button id="btn-clear-steps" class="btn btn-sm">Clear Pads</button>
+            </div>
+          </div>
+          <div id="sequencer-grid" class="seq-grid"></div>
+        </div>
+
+        <div class="side-stack">
+          <!-- Selected Instrument 5-param Synth Rack -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Instrument Patch — <span id="sel-inst-name" class="teal">Voice 1</span></h3>
+              <select id="sel-waveform">
+                <option value="isn">isn (Meum odd)</option>
+                <option value="ics">ics (Meum even)</option>
+                <option value="book_isn">book_isn (2·sin θ/2)</option>
+                <option value="sine">sine</option>
+                <option value="triangle">triangle</option>
+                <option value="saw">sawtooth</option>
+                <option value="square">square</option>
+              </select>
+            </div>
+            <div class="knob-grid">
+              <div class="param-row"><label>Morph Rate <span id="pv-morph">1.20</span></label><input id="p-morph" type="range" min="0.05" max="10" step="0.05" /></div>
+              <div class="param-row"><label>Harmonic Freq <span id="pv-freq">432 Hz</span></label><input id="p-freq" type="range" min="40" max="2400" step="1" /></div>
+              <div class="param-row"><label>Chaos / Feedback <span id="pv-chaos">0.35</span></label><input id="p-chaos" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>Recursive Fold <span id="pv-fold">4.0</span></label><input id="p-fold" type="range" min="1" max="16" step="0.1" /></div>
+              <div class="param-row"><label>Harmonic Lattice <span id="pv-lattice">0.33</span></label><input id="p-lattice" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>Voice Gain <span id="pv-gain">0.85</span></label><input id="p-gain" type="range" min="0" max="1.5" step="0.01" /></div>
+              <div class="param-row"><label>AM Depth <span id="pv-am">0.15</span></label><input id="p-am" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>FM Depth <span id="pv-fm">0.12</span></label><input id="p-fm" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>PM Depth <span id="pv-pm">0.18</span></label><input id="p-pm" type="range" min="0" max="2" step="0.01" /></div>
+              <div class="param-row"><label>Meum Field <span id="pv-meum">0.45</span></label><input id="p-meum" type="range" min="0" max="1" step="0.01" /></div>
+            </div>
+          </div>
+
+          <!-- Live DJ Commutative Pair FX -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Live DJ Effects (Commutative Pair Space)</h3>
+              <code id="dj-pair-sig" class="dim">pair(0,1)</code>
+            </div>
+            <div class="dj-grid">
+              <div class="inline-row">
+                <label>Pair A</label><input id="inp-pair-a" type="number" min="0" max="47" value="0" class="num-xs" />
+                <label>Pair B</label><input id="inp-pair-b" type="number" min="0" max="47" value="1" class="num-xs" />
+              </div>
+              <div class="param-row"><label>GOAVA Pair Morph <span id="val-dj-goava">0%</span></label><input id="rng-dj-goava" type="range" min="0" max="1" step="0.01" value="0" /></div>
+              <div class="param-row"><label>Random Parametric <span id="val-dj-rnd">0%</span></label><input id="rng-dj-rnd" type="range" min="0" max="1" step="0.01" value="0" /></div>
+              <div class="param-row"><label>DJ Boost Hit <span id="val-dj-boost">0%</span></label><input id="rng-dj-boost" type="range" min="0" max="1" step="0.01" value="0" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE OSCILLOSCOPE + FFT SPECTRUM -->
+      <div class="meters-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Master Oscilloscope</h3>
+            <div class="telemetry">RMS <code id="met-rms">0.000</code> · Peak <code id="met-peak">0.000</code> · EQR Z <code id="met-eqrz">0.000</code></div>
+          </div>
+          <canvas id="cv-scope" width="600" height="120"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>32-Band FFT Spectrum Analyzer</h3>
+            <div class="telemetry">Centroid <code id="met-cent">0.00</code> · Sample0 <code id="met-s0">0.0</code></div>
+          </div>
+          <canvas id="cv-spec" width="600" height="120"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 2: VIDEOSYNTH 1D/2D/3D VISUALIZER -->
+    <main id="tab-visualizer" class="tab-panel">
+      <div class="vis-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Live 1D / 2D / 3D InstrumentVisualObject Scenograph</h3>
+            <div class="telemetry">
+              Objects: <code id="vis-count">8</code> · Eski Set: <code id="vis-eski">starburst</code> · View ID: <code id="vis-sig">--</code>
+            </div>
+          </div>
+          <canvas id="cv-videosynth" width="760" height="430"></canvas>
+          <div class="vis-footer">
+            <span>Drag canvas to orbit 3D camera · Fibonacci Sphere View Slot:</span>
+            <input id="rng-view-idx" type="range" min="0" max="15" value="0" />
+            <code id="vis-cam-readout">yaw 0° pitch 0°</code>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Rust Server Canonical Frame (PNG Rasterizer)</h3>
+            <div class="panel-actions">
+              <label class="inline-lbl">Frame <input id="inp-frame-idx" type="number" min="0" max="9999" value="0" class="num-sm" /></label>
+              <button id="btn-render-frame" class="btn btn-sm btn-accent">Render Frame</button>
+            </div>
+          </div>
+          <div class="png-stage">
+            <img id="img-rust-frame" alt="Rust VideoSynth canonical frame" />
+          </div>
+          <div class="slot-list-head">Canonical 64-Slot Instrument Lattice (N-Independent Identity)</div>
+          <div id="vis-slot-table" class="slot-table"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 3: GLOBAL PLAY ALGORITHMS -->
+    <main id="tab-global-play" class="tab-panel">
+      <div class="gp-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Global Play Panel — Project Algorithm Layer</h3>
+            <div class="panel-actions">
+              <button id="btn-gp-rand" class="btn">🎲 Randomize (Authoring Only)</button>
+              <button id="btn-gp-apply" class="btn-toggle">▶ Apply Algo to Master Mix: OFF</button>
+            </div>
+          </div>
+          <div class="gp-form">
+            <label>Script Algo (multi-line over <code>t</code>, <code>MEUM</code>, <code>PHI</code>, <code>seed</code>, <code>i</code>)</label>
+            <textarea id="txt-gp-script" rows="6"></textarea>
+            <label>Domain Algo (single-line equation) <span id="gp-hints" class="hints"></span></label>
+            <input id="inp-gp-domain" type="text" />
+            <div class="gp-sliders">
+              <div class="param-row"><label>Mix <span id="gpv-mix">35%</span></label><input id="gp-mix" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>Script Amt <span id="gpv-sa">75%</span></label><input id="gp-sa" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>Domain Amt <span id="gpv-da">75%</span></label><input id="gp-da" type="range" min="0" max="1" step="0.01" /></div>
+              <div class="param-row"><label>Wire Amt <span id="gpv-wa">60%</span></label><input id="gp-wa" type="range" min="0" max="1" step="0.01" /></div>
+            </div>
+            <div class="gp-gates">
+              <label><input id="gp-en-script" type="checkbox" checked /> Enable Script</label>
+              <label><input id="gp-en-domain" type="checkbox" checked /> Enable Domain</label>
+              <label><input id="gp-en-wire" type="checkbox" checked /> Enable Wire</label>
+              <button id="btn-gp-save" class="btn btn-accent">Save &amp; Evaluate</button>
+            </div>
+          </div>
+          <div id="gp-eval-err" class="err-box"></div>
+          <canvas id="cv-gp-curve" width="620" height="140"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Global Wire Algo — Detector → Target Matrix</h3>
+            <button id="btn-add-wire" class="btn btn-sm">+ Add Wire</button>
+          </div>
+          <div id="gp-wire-list" class="wire-list"></div>
+          <div class="info-note">
+            <strong>Apply semantics:</strong> Randomize writes Script/Domain/Wire fields only (<code>apply_enabled = false</code>).
+            Toggle <em>Apply Algo to Master Mix</em> ON to broadcast enabled layers to the Rust DSP renderer. Never mutates your Seed field.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 4: FRACTAL SPATIAL UNIVERSE -->
+    <main id="tab-spatial" class="tab-panel">
+      <div class="spatial-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Native 4-Engine Fractal Spatial Universe (Interactive 3D Orbit)</h3>
+            <div class="panel-actions">
+              <label class="inline-lbl">Depth <input id="sp-depth" type="number" min="1" max="4" value="3" class="num-xs" /></label>
+              <label class="inline-lbl">Roots <input id="sp-roots" type="number" min="2" max="10" value="6" class="num-xs" /></label>
+              <label class="inline-lbl"><input id="sp-goava" type="checkbox" /> GOAVA Adapter</label>
+              <button id="btn-sp-refresh" class="btn btn-sm btn-accent">Rebuild</button>
+            </div>
+          </div>
+          <canvas id="cv-spatial" width="800" height="470"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Spatial Kernel Telemetry</h3></div>
+          <div id="spatial-meta" class="kv-list"></div>
+          <div class="info-note">
+            Sculpted natively from <code>randomizer</code>, <code>phase_lock</code>, <code>euclidean</code>, and <code>seeded</code> across
+            five channels (<code>position</code>, <code>phase</code>, <code>scale</code>, <code>topology</code>, <code>complexity</code>).
+            GOAVA is an optional post-projection phase adapter — topology edges remain invariant.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 5: GAME ENGINE & OPEN-WORLD SANDBOX -->
+    <main id="tab-game" class="tab-panel">
+      <div class="game-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Deterministic GameIdentity &amp; Software Lattice</h3>
+            <div class="panel-actions">
+              <button id="btn-game-classify" class="btn btn-sm btn-accent">Classify from Seed</button>
+              <a class="btn btn-sm btn-primary" href="./api/game/export.zip" download="groovebox_game.zip">⬇ Export .ZIP Package</a>
+            </div>
+          </div>
+          <div id="game-card" class="game-card"></div>
+          <div class="slot-list-head">Software Lattice Coverage Proof (64 Seeds across 15 Safe Kinds)</div>
+          <div id="lattice-bars" class="lattice-bars"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Open-World Loom Sandbox (WASD / Q-E Look / Console)</h3>
+            <div class="panel-actions">
+              <button id="btn-sb-reset" class="btn btn-sm">Sync to Composition</button>
+              <code id="sb-pos">x=0.0 z=0.0</code>
+            </div>
+          </div>
+          <canvas id="cv-sandbox" width="640" height="330" tabindex="0"></canvas>
+          <div class="sb-controls">
+            <div class="dpad">
+              <button class="btn btn-sm" data-move="0,0,1">W ↑</button>
+              <button class="btn btn-sm" data-move="-1,0,0">A ←</button>
+              <button class="btn btn-sm" data-move="0,0,-1">S ↓</button>
+              <button class="btn btn-sm" data-move="1,0,0">D →</button>
+              <button class="btn btn-sm" data-look="-0.35">Q ↺</button>
+              <button class="btn btn-sm" data-look="0.35">E ↻</button>
+            </div>
+            <div class="quick-cmds">
+              <button class="btn btn-sm" data-cmd="/sandbox">/sandbox</button>
+              <button class="btn btn-sm" data-cmd="/build crystal Harmonic Spire">/build crystal</button>
+              <button class="btn btn-sm" data-cmd="/note Meum landmark">/note</button>
+              <button class="btn btn-sm" data-cmd="/remove">/remove</button>
+              <button class="btn btn-sm" data-cmd="/report">/report</button>
+            </div>
+          </div>
+          <div id="sb-console" class="console-log"></div>
+          <form id="sb-form" class="console-form">
+            <input id="sb-cmd-input" type="text" placeholder="Type chat or /sandbox, /build crate My Box, /remove, /note <text>, /tp 32 32, /help" />
+            <button type="submit" class="btn btn-sm btn-accent">Send</button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 6: DETERMINISM AUDITOR & PYTHON PARITY -->
+    <main id="tab-audit" class="tab-panel">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Determinism Contract &amp; Python Reference Parity Auditor</h3>
+          <button id="btn-run-audit" class="btn btn-accent">Run Full Verification</button>
+        </div>
+        <div id="audit-results" class="audit-grid"></div>
+      </div>
+    </main>
+
+    <footer class="statusbar">
+      <span id="status-msg">Ready — Groovebox Rust Engine active.</span>
+      <span class="dim">Pure Rust stdlib workspace (groovebox-math · state · dsp · visual · game · cli · server)</span>
+    </footer>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>

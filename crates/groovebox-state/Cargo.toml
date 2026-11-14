@@ -1,0 +1,9 @@
+[package]
+name = "groovebox-state"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Atomic canonical composition state, toggles, trigger sculptor, GOAVA, Euclidean, Global Play, and audit for Groovebox"
+
+[dependencies]
+groovebox-math = { path = "../groovebox-math" }

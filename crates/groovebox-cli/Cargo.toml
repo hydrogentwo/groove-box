@@ -1,0 +1,13 @@
+[package]
+name = "groovebox-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command-line audio, visual, spatial, game-classification, and audit tool for Groovebox"
+
+[dependencies]
+groovebox-math = { path = "../groovebox-math" }
+groovebox-state = { path = "../groovebox-state" }
+groovebox-dsp = { path = "../groovebox-dsp" }
+groovebox-visual = { path = "../groovebox-visual" }
+groovebox-game = { path = "../groovebox-game" }

@@ -1,0 +1,8 @@
+[package]
+name = "groovebox-math"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core deterministic mathematics, hashing, Operator Theory, EQR tensor, Eski fractals, FFT, JSON, and script evaluator for Groovebox"
+
+[dependencies]

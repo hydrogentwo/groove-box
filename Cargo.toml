@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/groovebox-math",
+    "crates/groovebox-state",
+    "crates/groovebox-dsp",
+    "crates/groovebox-visual",
+    "crates/groovebox-game",
+    "crates/groovebox-cli",
+    "crates/groovebox-server",
+]
+
+[workspace.package]
+version = "3.9.0"
+edition = "2021"
+license = "MIT"
+description = "Groovebox — deterministic audiovisual composition & game synthesis system in pure Rust"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
